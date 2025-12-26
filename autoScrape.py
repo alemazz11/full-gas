@@ -27,7 +27,7 @@ def run(playwright: Playwright, brands, cars):
         start_url = f"https://www.autoscout24.com/lst/{brand}?sort=standard&desc=0&ustate=N%2CU&atype=C&cy=D%2CA%2CI%2CB%2CNL%2CE%2CL%2CF&damaged_listing=exclude&source=homepage_search-mask"
         
         chrome = playwright.chromium
-        browser = chrome.launch(headless=False, slow_mo=50)
+        browser = chrome.launch(headless=True, slow_mo=50)
         #User agent to act as human
         context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
         
