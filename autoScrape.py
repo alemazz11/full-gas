@@ -41,7 +41,7 @@ def run(playwright: Playwright, brands, cars):
         while True:
             
             # Going through every listing
-            for link in page.locator("a[data-anchor-overlay='true']").all()[:1]: 
+            for link in page.locator("a[data-anchor-overlay='true']").all(): 
                 
                 p = context.new_page()
                 p.route("**/*.{png,jpg,jpeg}", lambda route: route.abort())
