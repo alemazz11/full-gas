@@ -2,6 +2,7 @@ from playwright.sync_api import sync_playwright, Playwright
 import json
 import pandas as pd
 import numpy as np
+import time
 
 def handle_cookies(page):
     try:
@@ -12,19 +13,12 @@ def handle_cookies(page):
     except:
         print("No cookie banner appeared.")
 
-brands = ['Alfa-Romeo','Lynk & Co', 'McLaren', 'Fiat', 'Citroen', 'Opel', 'Renault', 'Dacia', 'CUPRA', 'Honda', 'Hyundai', 
-            'Ford', 'Volvo', 'Toyota', 'SEAT', 'Peugeot', 'Jeep', 'Kia',
-            'Land-Rover', 'Nissan', 'Skoda', 'Suzuki','MINI','Lancia'
-            , 'Volkswagen', 'Audi', 'BMW', 'Mazda',
-            'Mercedes-Benz', 'Jaguar', 'Lexus','Cadillac',
-            'Chevrolet', 'Dodge', 'Tesla','Iveco',
-            'Ferrari', 'Porsche', 'Maserati', 'Lamborghini', 
-             'Aston-Martin', 'Bentley', 'Rolls-Royce', 'Corvette']
+
         
 condition_mapping = {'UsedCondition': 'Used', 'NewCondition': 'New'}
 
-def run(playwright: Playwright, brands=brands):
-    
+
+def run(playwright: Playwright, brands, cars):
     
     for brand in brands:
         print(f"Scraping {brand}...")
@@ -47,7 +41,7 @@ def run(playwright: Playwright, brands=brands):
         while True:
             
             # Going through every listing
-            for link in page.locator("a[data-anchor-overlay='true']").all(): 
+            for link in page.locator("a[data-anchor-overlay='true']").all()[:1]: 
                 
                 p = context.new_page()
                 p.route("**/*.{png,jpg,jpeg}", lambda route: route.abort())
@@ -66,25 +60,134 @@ def run(playwright: Playwright, brands=brands):
                 json_data2 = json.loads(data2)
                 
                 # Extracting chosen fields
-                Brand = json_data["brand"]["name"]
-                Model = json_data["offers"]["itemOffered"]["model"]
-                Price = json_data["offers"]["price"]
+                try:
+                    Brand = json_data["brand"]["name"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Brand = np.nan
+                
+                try:
+                    Model = json_data["offers"]["itemOffered"]["model"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Model = np.nan
+                
+                try:
+                    Price = json_data["offers"]["price"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Price = np.nan
+                
+                try:
+                    Country = json_data["offers"]["offeredBy"]["address"]['addressCountry']
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Country = np.nan
+                
+                try:
+                    Body = json_data["offers"]["itemOffered"]["bodyType"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Body = np.nan
+                
                 try:
                     Mileage = json_data["offers"]["itemOffered"]["mileageFromOdometer"]["value"]
-                except TypeError:
+                except (KeyError, IndexError, StopIteration, TypeError):
                     Mileage = 0
+                
                 try:
                     Condition = condition_mapping.get(json_data["offers"]["itemCondition"])
-                except:
+                except (KeyError, IndexError, StopIteration, TypeError):
                     Condition = json_data["offers"]["itemCondition"]
-
                 
+                try:
+                    Power = next((p["value"] for p in json_data.get("offers", {}).get("itemOffered", {}).get("vehicleEngine", [{}])[0]
+                                        .get("enginePower", []) if p.get("unitCode") == "BHP"), 0)
+                except(KeyError, IndexError, StopIteration, TypeError):
+                    Power = np.nan
+                
+                try:
+                    Engine_Size_cc = json_data["offers"]["itemOffered"]["vehicleEngine"][0]["engineDisplacement"]["value"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Engine_Size_cc = np.nan
+
+                try:
+                    Fuel_Consumption_l = json_data["offers"]["itemOffered"]["fuelConsumption"]["value"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Fuel_Consumption_l = np.nan
+
+                try:
+                    Seats = json_data["offers"]["itemOffered"]["seatingCapacity"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Seats = np.nan
+                
+                try:
+                    Doors = json_data["offers"]["itemOffered"]["numberOfDoors"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Doors = np.nan
+                
+                try:
+                    Drivetrain = json_data["offers"]["itemOffered"]["driveWheelConfiguration"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Drivetrain = np.nan
+
+                try:
+                    Gearbox = json_data["offers"]["itemOffered"]["vehicleTransmission"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Gearbox = np.nan
+
+                try:
+                    Gears = json_data["offers"]["itemOffered"]["numberOfForwardGears"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Gears = np.nan
+                try:
+                    Year = json_data["offers"]["itemOffered"]["productionDate"].split("-")[0]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Year = np.nan
+
+                try:
+                    Color = json_data["color"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Color = np.nan
+
+                try:
+                    Image_url = json_data["image"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Image_url = np.nan
+                
+                try:
+                    Previous_Owners = json_data["offers"]["itemOffered"]["numberOfPreviousOwners"]
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Previous_Owners = np.nan
+
                 details = json_data2.get("props", {}).get("pageProps", {}).get("listingDetails", {})
-                Fuel_Type = details.get("vehicle", {}).get("fuelCategory", {}).get("formatted", np.nan)
-                
-                
-                print(Brand, Model, Price, Mileage, Condition, Fuel_Type)
+                try:
+                    Fuel_Type = details.get("vehicle", {}).get("fuelCategory", {}).get("formatted", np.nan)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Fuel_Type = np.nan
+                try:
+                    Upholstery = details.get("vehicle", {}).get("upholstery", np.nan)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Upholstery = np.nan
+                try:
+                    Cylinders = details.get("vehicle", {}).get("cylinders", np.nan)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Cylinders = np.nan
+                try:
+                    Seller = details.get("seller", {}).get("type", np.nan)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Seller = np.nan
 
+                try:
+                    Full_Service_History = details.get("vehicle", {}).get("hasFullServiceHistory", False)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Full_Service_History = False
+
+                try:
+                    Non_Smoker_Vehicle = details.get("vehicle", {}).get("nonSmoking", False)
+                except (KeyError, IndexError, StopIteration, TypeError):
+                    Non_Smoker_Vehicle = False
+
+                cars.append([Brand, Model, Body, Mileage, Price, Year, Country, Condition,
+                             Fuel_Type, Fuel_Consumption_l, Drivetrain, Gearbox, Gears, 
+                             Power, Engine_Size_cc, Cylinders, Seats, Doors, Color, Upholstery,
+                              Full_Service_History, Non_Smoker_Vehicle, Previous_Owners, Seller, Image_url])
+                
                 p.close()
 
             # navigate to the next page
@@ -95,7 +198,8 @@ def run(playwright: Playwright, brands=brands):
                 break
             else:
                 next_page.click()
-                
+
+    return cars          
             
             
 
@@ -103,15 +207,36 @@ def run(playwright: Playwright, brands=brands):
         
 
 
-
 def main():
-    # closes browser after scraping
-
+    columns = [
+    "Brand", "Model", "Body", "Mileage_km", "Price", "Year", "Country", "Condition",
+    "Fuel_Type", "Fuel_Consumption_l", "Drivetrain", "Gearbox", "Gears", 
+    "Power_hp", "Engine_Size_cc", "Cylinders", "Seats", "Doors", "Color", "Upholstery",
+    "Full_Service_History", "Non_Smoker_Vehicle", "Previous_Owners", "Seller", "Image_url"
+    ]
+    
+    brands = ['McLaren','Alfa-Romeo','Lynk & Co','Abarth', 'Fiat', 'Citroen', 'Opel', 'Renault', 'Dacia', 'CUPRA', 'Honda', 'Hyundai', 
+            'Ford', 'Volvo', 'Toyota', 'SEAT', 'Peugeot', 'Jeep', 'Kia',
+            'Land-Rover', 'Nissan', 'Skoda', 'Suzuki','MINI','Lancia'
+            , 'Volkswagen', 'Audi', 'BMW', 'Mazda',"smart",
+            'Mercedes-Benz', 'Jaguar', 'Lexus','Cadillac',"MG","BYD",
+            'Chevrolet', 'Dodge', 'Iveco', 'Tesla', "Mitsubishi",
+              'Ferrari','Porsche', 'Maserati', 'Lamborghini', 
+             'Aston-Martin', 'Bentley', 'Rolls-Royce', 'Corvette']
+   
     cars = []
 
+   
     with sync_playwright() as playwright:
-        run(playwright, brands=brands)
+        cars_data = run(playwright, brands, cars)
+    
+    if cars_data:
+        df = pd.DataFrame(cars_data, columns=columns)
+        df.drop_duplicates(inplace=True)
+        df.to_csv("auto_df.csv", index=False)
+        print("Data saved to auto_df.csv")
 
     
-main()
+if __name__ == "__main__":
+    main()
     
