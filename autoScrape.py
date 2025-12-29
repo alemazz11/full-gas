@@ -44,10 +44,10 @@ def run(playwright: Playwright, brand, brand_cars):
 
         try:
             pagine_viste_in_questa_sessione = 0
-            
+
             while pagine_viste_in_questa_sessione < 6:
-                if current_page > 51:
-                    print("Raggiunta pagina 51, terminando scraping...")
+                if current_page > 50:
+                    print("Raggiunta pagina finale, terminando scraping...")
                     return brand_cars 
                 target_url = f"https://www.autoscout24.com/lst/{brand}?atype=C&cy=D%2CA%2CI%2CB%2CNL%2CE%2CL%2CF&damaged_listing=exclude&desc=0&page={current_page}&sort=standard"
 
@@ -226,12 +226,7 @@ def run(playwright: Playwright, brand, brand_cars):
                 current_page += 1
                 pagine_viste_in_questa_sessione += 1
 
-                time.sleep(random.uniform(3, 6))
-
-                if current_page > 200:
-                    print("Raggiunto limite massimo prefissato di 200 pagine.")
-                    current_page = None
-                    break            
+                time.sleep(random.uniform(3, 6))        
             
         except Exception as e:
             print(f"Error navigating pages for {brand}: {e}")
